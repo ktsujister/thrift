@@ -1,6 +1,4 @@
 use std::io;
-use std::io::Read as IoRead;
-use std::io::Write as IoWrite;
 
 use {Protocol, Transport, Result};
 use protocol::{Type, MessageType};
