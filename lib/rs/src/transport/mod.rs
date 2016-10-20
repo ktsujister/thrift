@@ -51,6 +51,9 @@ impl<T: Read + Write> Transport for RwTransport<T> { }
 pub struct FramedTransport<T> {
     pub transport: T,
     tx_buffer: Vec<u8>,
+    rx_buffer: Vec<u8>,
+    frame_size: usize,
+    read_pos: usize,
     flushed: bool,
 }
 
@@ -59,6 +62,9 @@ impl<T> FramedTransport<T> {
         FramedTransport {
             transport: transport,
             tx_buffer: Vec::<u8>::new(),
+            rx_buffer: Vec::<u8>::new(),
+            frame_size: 0,
+            read_pos: 0,
             flushed: true,
         }
     }
@@ -72,25 +78,26 @@ impl<T> FramedTransport<T> {
 
 impl<T: Read> Read for FramedTransport<T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-
-        loop {
-            if self.flushed {
-                // read the size of the frame
-                let mut b = [0; 4];
-                if let Ok(_) = self.transport.read_exact(&mut b) {
-                    self.flushed = false;
-                }
-            } else {
-                break;
-            }
+        let buf_size = buf.len();
+        // debug!("read buf size:{}", buf_size);
+        if self.read_pos >= self.frame_size {
+            let mut b = [0; 4];
+            try!(self.transport.read_exact(&mut b));
+            self.frame_size = BigEndian::read_i32(&b) as usize;
+            // debug!("read-frame size:{}", self.frame_size);
+            self.rx_buffer.resize(self.frame_size, 0);
+            try!(self.transport.read_exact(&mut self.rx_buffer));
+            self.read_pos = 0;
         }
-
-        self.transport.read(buf)
+        buf.clone_from_slice(&self.rx_buffer[self.read_pos..(self.read_pos + buf_size)]);
+        self.read_pos += buf_size;
+        Ok(buf_size)
     }
 }
 
 impl<T: Write> Write for FramedTransport<T> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        // debug!("write size:{}", buf.len());
         self.tx_buffer.extend_from_slice(buf);
         Ok(buf.len())
     }
