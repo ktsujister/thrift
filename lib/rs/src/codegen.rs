@@ -8,7 +8,7 @@ macro_rules! service {
      bounds = [$($boundty:ident: $bound:ident,)*],
      fields = [$($fname:ident: $fty:ty,)*]) => {
         pub trait $name {
-            $(fn $smname(&self, $($saname: $saty),*) -> $srrty;)*
+            $(fn $smname(&self, $($saname: $saty),*) -> Result<$srrty, $crate::exception::TApplicationException>;)*
         }
 
         service_processor! {
@@ -116,13 +116,21 @@ macro_rules! service_processor_methods {
             self.proxies.proxy(ty, MNAME, id, &args);
 
             // TODO: Further investigate this unwrap.
-            let result = self.$fname.$mname($(args.$aname.unwrap()),*);
-            let result = service_processor_methods_translate_return!(
-                result, $oname, $enname = [$($evname($ename: $ety => $eid),)*]);
-            try!($crate::protocol::helpers::send(prot, transport, MNAME,
-                                                 $crate::protocol::MessageType::Reply, &result, id));
-
-            Ok(())
+            match self.$fname.$mname($(args.$aname.unwrap()),*) {
+                Ok(result) => {
+                    let result = service_processor_methods_translate_return!(
+                        result, $oname, $enname = [$($evname($ename: $ety => $eid),)*]);
+                    try!($crate::protocol::helpers::send(prot, transport, MNAME,
+                                                         $crate::protocol::MessageType::Reply, &result, id));
+                    Ok(())
+                },
+                Err(e) => {
+                    // println!("error: {:?}", &e);
+                    try!($crate::protocol::helpers::send(prot, transport, MNAME,
+                                                         $crate::protocol::MessageType::Exception, &e, id));
+                    Ok(())
+                },
+            }
         })*
     }
 }
@@ -394,4 +402,3 @@ macro_rules! enom {
         }
     }
 }
-
