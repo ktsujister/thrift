@@ -34,11 +34,11 @@ pub fn main() {
     let mut client = tutorial::CalculatorClient::new(BinaryProtocol, stream);
 
     // Ping
-    client.ping().unwrap();
+    let _r = client.ping().unwrap();
     println!("ping()");
 
     // Add
-    println!("1 + 1 = {}", client.add(1, 1).unwrap());
+    println!("1 + 1 = {}", client.add(1, 1).unwrap().unwrap());
 
     // Work: divide
     let work = tutorial::Work {
@@ -48,7 +48,7 @@ pub fn main() {
         comment: None
     };
 
-    let error = client.calculate(1, work).unwrap().err().unwrap();
+    let error = client.calculate(1, work).unwrap().unwrap().err().unwrap();
     println!("Error! {:?}", error);
 
     // Work: subtract
@@ -58,7 +58,7 @@ pub fn main() {
         num2: 10,
         comment: None
     };
-    println!("15 - 10 = {}", client.calculate(1, work).unwrap().unwrap());
+    println!("15 - 10 = {}", client.calculate(1, work).unwrap().unwrap().unwrap());
 
     let ss = client.getStruct(1).unwrap();
     println!("Received log: {:?}", ss);

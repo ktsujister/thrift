@@ -27,10 +27,10 @@ struct Handler {
 }
 
 impl SharedService for Handler {
-    fn getStruct(&self, id: i32) -> SharedStruct {
+    fn getStruct(&self, id: i32) -> thrift::exception::Result<SharedStruct> {
         self.sender.send(id).unwrap();
 
-        SharedStruct { key: id, value: String::new() }
+        Ok(SharedStruct { key: id, value: String::new() })
     }
 }
 

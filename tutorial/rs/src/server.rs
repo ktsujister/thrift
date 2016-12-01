@@ -43,16 +43,17 @@ struct CalculatorHandler {
 }
 
 impl<'a> Calculator for &'a CalculatorHandler {
-    fn ping(&self) {
+    fn ping(&self) -> thrift::exception::Result<()> {
         println!("ping()");
+        Ok(())
     }
 
-    fn add(&self, n1: i32, n2: i32) -> i32 {
+    fn add(&self, n1: i32, n2: i32) -> thrift::exception::Result<i32> {
         println!("add({}, {})", n1, n2);
-        n1 + n2
+        Ok(n1 + n2)
     }
 
-    fn calculate(&self, log_id: i32, work: Work) -> Result<i32, CalculatorCalculateError> {
+    fn calculate(&self, log_id: i32, work: Work) -> thrift::exception::Result<Result<i32, CalculatorCalculateError>> {
         println!("calculate({}, {:?})", log_id, work);
 
         let num1 = work.num1;
@@ -64,10 +65,10 @@ impl<'a> Calculator for &'a CalculatorHandler {
             Operation::MULTIPLY => num1 * num2,
             Operation::DIVIDE => {
                 if num2 == 0 {
-                    return Err(CalculatorCalculateError::Ouch(InvalidOperation {
+                    return Ok(Err(CalculatorCalculateError::Ouch(InvalidOperation {
                         what_op: work.op as i32,
                         why: "Cannot divide by 0".into()
-                    }))
+                    })))
                 }
 
                 num1 / num2
@@ -77,18 +78,19 @@ impl<'a> Calculator for &'a CalculatorHandler {
         let ss = SharedStruct { key: log_id, value: val.to_string() };
         self.log.borrow_mut().insert(log_id, ss);
 
-        Ok(val)
+        Ok(Ok(val))
     }
 
-    fn zip(&self) {
+    fn zip(&self) -> thrift::exception::Result<()> {
         println!("zip");
+        Ok(())
     }
 }
 
 impl<'a> SharedService for &'a CalculatorHandler {
-    fn getStruct(&self, log_id: i32) -> SharedStruct {
+    fn getStruct(&self, log_id: i32) -> thrift::exception::Result<SharedStruct> {
         println!("getStruct({})", log_id);
-        self.log.borrow()[&log_id].clone()
+        Ok(self.log.borrow()[&log_id].clone())
     }
 }
 
