@@ -525,14 +525,17 @@ pub mod helpers {
     where R: Decode, T: Transport, P: Protocol {
         match (name, ty, id) {
             (_, MessageType::Exception, _) => {
-                println!("got exception");
+                // println!("got exception");
+                try!(result.decode(protocol, transport));
+                try!(protocol.read_message_end(transport));
+                Ok(())
                 // TODO
                 //let x = ApplicationException;
                 //x.read(&mut protocol)
                 //protocol.read_message_end();
                 //transport.read_end();
                 //throw x
-                Err(::Error::UserException)
+                //Err(::Error::UserException)
             }
             // TODO: Make sure the client doesn't receive Call messages and that the server
             // doesn't receive Reply messages

@@ -8,7 +8,7 @@ macro_rules! service {
      bounds = [$($boundty:ident: $bound:ident,)*],
      fields = [$($fname:ident: $fty:ty,)*]) => {
         pub trait $name {
-            $(fn $smname(&self, $($saname: $saty),*) -> Result<$srrty, $crate::exception::TApplicationException>;)*
+            $(fn $smname(&self, $($saname: $saty),*) -> $crate::exception::Result<$srrty>;)*
         }
 
         service_processor! {
@@ -181,7 +181,7 @@ macro_rules! service_client {
 #[macro_export]
 macro_rules! service_client_methods {
     (methods = [$($iname:ident -> $oname:ident = $fname:ident.$mname:ident($($aname:ident: $aty:ty => $aid:expr,)*) -> $rty:ty => $enname:ident = [$($evname:ident($ename:ident: $ety:ty => $eid:expr),)*] ($rrty:ty),)*]) => {
-        $(pub fn $mname(&mut self, $($aname: $aty,)*) -> $crate::Result<$rrty> {
+        $(pub fn $mname(&mut self, $($aname: $aty,)*) -> $crate::Result<$crate::exception::Result<$rrty>> {
             #[allow(unused_imports)]
             use $crate::protocol::Decode;
             static MNAME: &'static str = stringify!($mname);
@@ -195,13 +195,20 @@ macro_rules! service_client_methods {
             let (name, ty, id) = try!(self.protocol.read_message_begin(&mut self.transport));
             if ty == $crate::protocol::MessageType::Exception {
                 // receive exception in ename, but use id to identify which one
-                // println!("name:{}, ty:{}, id:{}", name, ty, id);
+                println!("name:{}, ty:{}, id:{}", name, ty, id);
                 match id + 1 {
                     $( $eid => { let mut arg: $ety = Default::default();
                                  try!(arg.decode(&mut self.protocol, &mut self.transport));
                                  try!(self.protocol.read_message_end(&mut self.transport));
                                  result.$ename = Some(arg); } ),*
-                    _ => return Err($crate::Error::from($crate::protocol::Error::ProtocolViolation))
+                    _ => {
+                        let mut app_error = $crate::exception::TApplicationException::default();
+                        try!($crate::protocol::helpers::receive_body(&mut self.protocol, &mut self.transport,
+                                                                     MNAME, &mut app_error, &name, ty, id));
+                        println!("app_error:{:?}", &app_error);
+                        // return Err($crate::Error::from($crate::protocol::Error::ProtocolViolation))
+                        return Ok(Err(app_error));
+                    }
                 }
             } else {
                 try!($crate::protocol::helpers::receive_body(&mut self.protocol, &mut self.transport,
@@ -210,7 +217,7 @@ macro_rules! service_client_methods {
 
             let result = service_client_methods_translate_result!(
                 result, $enname = [$($evname($ename: $ety => $eid),)*]);
-            Ok(result)
+            Ok(Ok(result))
         })*
     }
 }

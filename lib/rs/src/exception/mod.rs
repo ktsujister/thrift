@@ -3,8 +3,9 @@
 
 use protocol::{self, Protocol};
 use Transport;
-use Result;
+use Result as ThriftResult;
 use std::default::Default;
+use std::fmt;
 
 enom! {
   name = TApplicationExceptionType,
@@ -24,15 +25,23 @@ enom! {
   default = UNKNOWN
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub struct TApplicationException {
     _type: TApplicationExceptionType,
     message: Option<String>,
 }
 
+pub type Result<T> = ::std::result::Result<T, TApplicationException>;
+
 impl TApplicationException {
     pub fn new(_type: TApplicationExceptionType, message: Option<String>) -> TApplicationException {
         TApplicationException { _type: _type, message: message }
+    }
+}
+
+impl fmt::Display for TApplicationException {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", &self)
     }
 }
 
@@ -49,7 +58,7 @@ impl protocol::ThriftTyped for TApplicationException {
 }
 
 impl protocol::Encode for TApplicationException {
-    fn encode<P, T>(&self, protocol: &mut P, transport: &mut T) -> Result<()>
+    fn encode<P, T>(&self, protocol: &mut P, transport: &mut T) -> ThriftResult<()>
         where P: Protocol, T: Transport {
         try!(protocol.write_struct_begin(transport, stringify!(TApplicationException)));
         if protocol::Encode::should_encode(&self.message) {
@@ -66,6 +75,32 @@ impl protocol::Encode for TApplicationException {
 
         try!(protocol.write_field_stop(transport));
         try!(protocol.write_struct_end(transport));
+        Ok(())
+    }
+}
+
+impl protocol::Decode for TApplicationException {
+    fn decode<P, T>(&mut self, protocol: &mut P, transport: &mut T) -> ThriftResult<()>
+        where P: Protocol, T: Transport {
+        try!(protocol.read_struct_begin(transport));
+        loop {
+            let (_, typ, id) = try!(protocol.read_field_begin(transport));
+
+            if typ == protocol::Type::Stop {
+                break;
+            } else if (typ, id) == (protocol::helpers::typ::<String>(), 1) {
+                try!(protocol::Decode::decode(&mut self.message, protocol, transport));
+            } else if (typ, id) == (protocol::helpers::typ::<i32>(), 2) {
+                try!(protocol::Decode::decode(&mut self._type, protocol, transport));
+            } else {
+                try!(protocol.skip(transport, typ));
+            }
+
+            try!(protocol.read_field_end(transport));
+        }
+
+        try!(protocol.read_struct_end(transport));
+
         Ok(())
     }
 }
