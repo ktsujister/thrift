@@ -4,9 +4,11 @@
 use protocol::{self, Protocol};
 use Transport;
 use Result;
+use std::default::Default;
 
-#[derive(Debug, Copy, Clone)]
-pub enum TApplicationExceptionType {
+enom! {
+  name = TApplicationExceptionType,
+  values = [
     UNKNOWN = 0,
     UNKNOWN_METHOD = 1,
     INVALID_MESSAGE_TYPE = 2,
@@ -18,6 +20,8 @@ pub enum TApplicationExceptionType {
     INVALID_TRANSFORM = 8,
     INVALID_PROTOCOL = 9,
     UNSUPPORTED_CLIENT_TYPE = 10,
+  ],
+  default = UNKNOWN
 }
 
 #[derive(Debug)]

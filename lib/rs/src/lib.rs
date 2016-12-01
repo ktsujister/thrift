@@ -23,12 +23,13 @@ pub mod server;
 pub mod processor;
 pub mod proxy;
 pub mod virt;
-pub mod exception;
 
 #[macro_use]
 mod codegen;
 mod impls;
 mod compiletest;
+
+pub mod exception;
 
 #[cfg(test)]
 mod mock;
