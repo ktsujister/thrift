@@ -36,6 +36,12 @@ impl TApplicationException {
     }
 }
 
+impl Default for TApplicationException {
+    fn default() -> TApplicationException {
+        TApplicationException { _type: TApplicationExceptionType::UNKNOWN, message: None }
+    }
+}
+
 impl protocol::ThriftTyped for TApplicationException {
     fn typ(&self) -> protocol::Type {
         protocol::Type::Struct
