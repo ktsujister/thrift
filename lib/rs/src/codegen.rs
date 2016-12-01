@@ -195,7 +195,7 @@ macro_rules! service_client_methods {
             let (name, ty, id) = try!(self.protocol.read_message_begin(&mut self.transport));
             if ty == $crate::protocol::MessageType::Exception {
                 // receive exception in ename, but use id to identify which one
-                println!("name:{}, ty:{}, id:{}", name, ty, id);
+                // println!("name:{}, ty:{}, id:{}", name, ty, id);
                 match id + 1 {
                     $( $eid => { let mut arg: $ety = Default::default();
                                  try!(arg.decode(&mut self.protocol, &mut self.transport));
@@ -205,7 +205,7 @@ macro_rules! service_client_methods {
                         let mut app_error = $crate::exception::TApplicationException::default();
                         try!($crate::protocol::helpers::receive_body(&mut self.protocol, &mut self.transport,
                                                                      MNAME, &mut app_error, &name, ty, id));
-                        println!("app_error:{:?}", &app_error);
+                        // println!("app_error:{:?}", &app_error);
                         // return Err($crate::Error::from($crate::protocol::Error::ProtocolViolation))
                         return Ok(Err(app_error));
                     }
